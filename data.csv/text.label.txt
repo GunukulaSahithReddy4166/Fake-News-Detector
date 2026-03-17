@@ -1,0 +1,11 @@
+text,label
+"NASA confirms water on Mars","real"
+"Celebrity found alive on Mars","fake"
+"COVID-19 vaccine approved by WHO","real"
+"Aliens built the pyramids","fake"
+"Local man wins lottery for the 2nd time","real"
+"Miracle cure for diabetes discovered","fake"
+"New species of bird discovered in India","real"
+"Politician admits secret plan to control weather","fake"
+"Economic growth announced for Q4","real"
+"Scientists clone dinosaurs from fossil blood","fake"

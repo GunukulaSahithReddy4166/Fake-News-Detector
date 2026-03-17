@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeSource - Fake News Detection Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-shield-halved"></i>
+                <span>SafeSource</span>
+            </div>
+            <div class="nav-search">
+                <input type="text" id="navSearchInput" placeholder="Search news to verify...">
+                <button onclick="searchFromNav()"><i class="fas fa-search"></i></button>
+            </div>
+            <div class="nav-links">
+                <a href="#" class="active">Home</a>
+                <a href="#verify">Verify</a>
+                <a href="#trending">Trending</a>
+                <a href="#analytics">Analytics</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Fake News Detection Platform</h1>
+            <p>Verify news authenticity with AI-powered analysis</p>
+            <div class="hero-search">
+                <input type="text" id="heroSearchInput" placeholder="Paste news headline or article here...">
+                <button onclick="verifyFromHero()">
+                    <i class="fas fa-check-circle"></i> Verify News
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Bar -->
+    <section class="categories-bar">
+        <div class="categories-container">
+            <button class="category-btn active" data-category="all">
+                <i class="fas fa-globe"></i> All
+            </button>
+            <button class="category-btn" data-category="domestic">
+                <i class="fas fa-flag"></i> Domestic
+            </button>
+            <button class="category-btn" data-category="international">
+                <i class="fas fa-earth-americas"></i> International
+            </button>
+            <button class="category-btn" data-category="politics">
+                <i class="fas fa-landmark"></i> Politics
+            </button>
+            <button class="category-btn" data-category="business">
+                <i class="fas fa-chart-line"></i> Business
+            </button>
+            <button class="category-btn" data-category="technology">
+                <i class="fas fa-microchip"></i> Technology
+            </button>
+            <button class="category-btn" data-category="sports">
+                <i class="fas fa-futbol"></i> Sports
+            </button>
+            <button class="category-btn" data-category="fashion">
+                <i class="fas fa-shirt"></i> Fashion
+            </button>
+            <button class="category-btn" data-category="health">
+                <i class="fas fa-heart-pulse"></i> Health
+            </button>
+            <button class="category-btn" data-category="science">
+                <i class="fas fa-flask"></i> Science
+            </button>
+        </div>
+    </section>
+
+    <div class="main-container">
+        <!-- Trending News Section -->
+        <section class="trending-section" id="trending">
+            <div class="section-header">
+                <h2><i class="fas fa-fire"></i> Trending Now</h2>
+                <span class="live-badge"><span class="pulse"></span> LIVE</span>
+            </div>
+            
+            <div class="trending-cards" id="trendingCards">
+                <!-- News cards will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Two Column Layout -->
+        <div class="two-column">
+            <!-- Verify News Section -->
+            <section class="verify-section" id="verify">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-magnifying-glass"></i> Verify a News Article</h2>
+                    </div>
+                    <div class="verify-form">
+                        <textarea id="newsInput" placeholder="Paste your news article or headline here to verify its authenticity...
+
+Example: NASA confirms water found on Mars surface"></textarea>
+                        <button class="btn-primary" onclick="verifyNews()">
+                            <i class="fas fa-bolt"></i> Check Authenticity
+                        </button>
+                    </div>
+
+                    <!-- Loading -->
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        <p>Analyzing news...</p>
+                    </div>
+
+                    <!-- Error -->
+                    <div class="error-message" id="errorMessage">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        <p id="errorText"></p>
+                    </div>
+
+                    <!-- Results -->
+                    <div class="result-container" id="resultContainer">
+                        <!-- Main Result -->
+                        <div class="result-main">
+                            <div class="result-header">
+                                <h3>Analysis Result</h3>
+                                <div class="result-badge" id="resultBadge">
+                                    <span id="rumorLabel">-</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Credibility Score -->
+                            <div class="credibility-display">
+                                <div class="credibility-circle-large">
+                                    <svg viewBox="0 0 100 100">
+                                        <circle class="bg" cx="50" cy="50" r="45"></circle>
+                                        <circle class="progress" cx="50" cy="50" r="45" id="credibilityProgress"></circle>
+                                    </svg>
+                                    <div class="credibility-text">
+                                        <span class="score" id="credibilityScore">0%</span>
+                                        <span class="label">Credibility</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ML Details -->
+                            <div class="ml-details">
+                                <div class="ml-item">
+                                    <span class="ml-label">ML Prediction</span>
+                                    <span class="ml-value" id="mlPrediction">-</span>
+                                </div>
+                                <div class="ml-item">
+                                    <span class="ml-label">Confidence</span>
+                                    <span class="ml-value" id="mlConfidence">-</span>
+                                </div>
+                            </div>
+
+                            <!-- Probability Bars -->
+                            <div class="probability-section">
+                                <div class="prob-item">
+                                    <div class="prob-header">
+                                        <span>Fake Probability</span>
+                                        <span id="fakeProb">0%</span>
+                                    </div>
+                                    <div class="prob-bar">
+                                        <div class="prob-fill fake" id="fakeBar"></div>
+                                    </div>
+                                </div>
+                                <div class="prob-item">
+                                    <div class="prob-header">
+                                        <span>Real Probability</span>
+                                        <span id="realProb">0%</span>
+                                    </div>
+                                    <div class="prob-bar">
+                                        <div class="prob-fill real" id="realBar"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Reasoning -->
+                            <div class="reasoning" id="reasoning">
+                                <i class="fas fa-lightbulb"></i>
+                                <p>-</p>
+                            </div>
+                        </div>
+
+                        <!-- Verification Details -->
+                        <div class="result-details">
+                            <div class="detail-card">
+                                <div class="detail-icon"><i class="fas fa-newspaper"></i></div>
+                                <div class="detail-content">
+                                    <h4>Trusted Sources</h4>
+                                    <p id="sourceCount">0 sources found</p>
+                                    <div class="sources-tags" id="sourcesTags"></div>
+                                </div>
+                                <div class="detail-status" id="verifiedStatus">
+                                    <span>Not Verified</span>
+                                </div>
+                            </div>
+
+                            <div class="detail-card">
+                                <div class="detail-icon"><i class="fab fa-google"></i></div>
+                                <div class="detail-content">
+                                    <h4>Google News</h4>
+                                    <p id="googleMentions">0 mentions</p>
+                                </div>
+                            </div>
+
+                            <div class="detail-card">
+                                <div class="detail-icon"><i class="fab fa-twitter"></i></div>
+                                <div class="detail-content">
+                                    <h4>Social Media</h4>
+                                    <p id="tweetCount">0 tweets</p>
+                                </div>
+                                <div class="trending-tag" id="trendingTag">
+                                    Not Trending
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <!-- Trending Social Media -->
+                <div class="sidebar-card">
+                    <h3><i class="fab fa-twitter"></i> Trending Topics</h3>
+                    <div class="trending-topics" id="trendingTopics">
+                        <span class="topic">#AI</span>
+                        <span class="topic">#WorldCup</span>
+                        <span class="topic">#Elections</span>
+                        <span class="topic">#Climate</span>
+                        <span class="topic">#Technology</span>
+                        <span class="topic">#Business</span>
+                    </div>
+                </div>
+
+                <!-- Top Rumors -->
+                <div class="sidebar-card rumors-card">
+                    <h3><i class="fas fa-triangle-exclamation"></i> Top Rumors Today</h3>
+                    <ul class="rumors-list" id="rumorsList">
+                        <li>
+                            <span class="rumor-icon">⚠️</span>
+                            <span class="rumor-text">Celebrity death hoax spreading online</span>
+                        </li>
+                        <li>
+                            <span class="rumor-icon">⚠️</span>
+                            <span class="rumor-text">Fake miracle cure for diabetes</span>
+                        </li>
+                        <li>
+                            <span class="rumor-icon">⚠️</span>
+                            <span class="rumor-text">Fake political statement viraled</span>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Analytics Dashboard -->
+        <section class="analytics-section" id="analytics">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-pie"></i> Fake News Analytics</h2>
+            </div>
+            <div class="analytics-grid">
+                <div class="analytics-card danger">
+                    <div class="analytics-icon"><i class="fas fa-fake-news"></i></div>
+                    <div class="analytics-content">
+                        <span class="analytics-value" id="fakeNewsToday">32</span>
+                        <span class="analytics-label">Fake News Today</span>
+                    </div>
+                </div>
+                <div class="analytics-card success">
+                    <div class="analytics-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="analytics-content">
+                        <span class="analytics-value" id="verifiedNews">120</span>
+                        <span class="analytics-label">Verified News</span>
+                    </div>
+                </div>
+                <div class="analytics-card warning">
+                    <div class="analytics-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="analytics-content">
+                        <span class="analytics-value" id="rumorsDetected">18</span>
+                        <span class="analytics-label">Rumors Detected</span>
+                    </div>
+                </div>
+                <div class="analytics-card info">
+                    <div class="analytics-icon"><i class="fas fa-hashtag"></i></div>
+                    <div class="analytics-content">
+                        <span class="analytics-value" id="trendingTopicsCount">14</span>
+                        <span class="analytics-label">Trending Topics</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-shield-halved"></i>
+                    <span>SafeSource</span>
+                </div>
+                <p>AI-powered fake news detection platform</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">About</a>
+                <a href="#">Data Sources</a>
+                <a href="#">Contact</a>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 SafeSource. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Sample trending news data
+        const trendingNews = [
+            {
+                title: "Government announces new economic reform package",
+                category: "business",
+                sources: 8,
+                credibility: 92,
+                isTrending: true
+            },
+            {
+                title: "International climate summit reaches new agreement",
+                category: "international",
+                sources: 6,
+                credibility: 88,
+                isTrending: true
+            },
+            {
+                title: "Tech giant unveils revolutionary AI assistant",
+                category: "technology",
+                sources: 5,
+                credibility: 85,
+                isTrending: true
+            },
+            {
+                title: "Cricket world cup final match highlights",
+                category: "sports",
+                sources: 7,
+                credibility: 95,
+                isTrending: true
+            },
+            {
+                title: "New healthcare initiative launched nationwide",
+                category: "health",
+                sources: 6,
+                credibility: 90,
+                isTrending: false
+            },
+            {
+                title: "Fashion week reveals sustainable trends",
+                category: "fashion",
+                sources: 4,
+                credibility: 82,
+                isTrending: false
+            }
+        ];
+
+        // Current category filter
+        let currentCategory = 'all';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderTrendingNews();
+            setupCategoryButtons();
+            updateAnalytics();
+        });
+
+        // Render trending news cards
+        function renderTrendingNews() {
+            const container = document.getElementById('trendingCards');
+            const filtered = currentCategory === 'all' 
+                ? trendingNews 
+                : trendingNews.filter(n => n.category === currentCategory);
+            
+            container.innerHTML = filtered.map(news => `
+                <div class="news-card" onclick="loadNews('${news.title}')">
+                    <div class="news-card-category">${news.category}</div>
+                    <h3 class="news-card-title">${news.title}</h3>
+                    <div class="news-card-meta">
+                        <span><i class="fas fa-newspaper"></i> ${news.sources} sources</span>
+                        <span class="credibility-${news.credibility >= 80 ? 'high' : 'medium'}">
+                            <i class="fas fa-shield"></i> ${news.credibility}%
+                        </span>
+                    </div>
+                    ${news.isTrending ? '<span class="trending-badge"><i class="fas fa-fire"></i> Trending</span>' : ''}
+                </div>
+            `).join('');
+        }
+
+        // Category buttons
+        function setupCategoryButtons() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentCategory = this.dataset.category;
+                    renderTrendingNews();
+                });
+            });
+        }
+
+        // Load news into verify section
+        function loadNews(title) {
+            document.getElementById('newsInput').value = title;
+            document.getElementById('verify').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Search from navigation
+        function searchFromNav() {
+            const query = document.getElementById('navSearchInput').value;
+            if (query) {
+                document.getElementById('newsInput').value = query;
+                document.getElementById('verify').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Search from hero
+        function verifyFromHero() {
+            const query = document.getElementById('heroSearchInput').value;
+            if (query) {
+                document.getElementById('newsInput').value = query;
+                document.getElementById('verify').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Verify news function
+        async function verifyNews() {
+            const newsText = document.getElementById('newsInput').value.trim();
+            
+            if (!newsText || newsText.length < 10) {
+                showError('Please enter a valid news text to verify.');
+                return;
+            }
+
+            // Hide previous results
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const formData = new FormData();
+                formData.append('news_text', newsText);
+
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'An error occurred');
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Display results
+        function displayResults(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('resultContainer').style.display = 'block';
+
+            // Credibility score
+            const score = data.credibility_score;
+            document.getElementById('credibilityScore').textContent = score + '%';
+            
+            const progress = document.getElementById('credibilityProgress');
+            const circumference = 2 * Math.PI * 45;
+            const offset = circumference - (score / 100) * circumference;
+            progress.style.strokeDashoffset = offset;
+            
+            // Color based on score
+            let color;
+            if (score >= 70) color = '#22c55e';
+            else if (score >= 50) color = '#f59e0b';
+            else color = '#ef4444';
+            progress.style.stroke = color;
+
+            // Result badge
+            const badge = document.getElementById('resultBadge');
+            badge.textContent = data.rumor_label;
+            badge.style.backgroundColor = getRumorColor(data.rumor_color);
+
+            // ML details
+            const predEl = document.getElementById('mlPrediction');
+            predEl.textContent = data.ml_prediction.charAt(0).toUpperCase() + data.ml_prediction.slice(1);
+            predEl.style.color = data.ml_prediction === 'real' ? '#22c55e' : '#ef4444';
+            document.getElementById('mlConfidence').textContent = data.ml_confidence + '%';
+
+            // Probability bars
+            document.getElementById('fakeBar').style.width = data.fake_probability + '%';
+            document.getElementById('realBar').style.width = data.real_probability + '%';
+            document.getElementById('fakeProb').textContent = data.fake_probability + '%';
+            document.getElementById('realProb').textContent = data.real_probability + '%';
+
+            // Reasoning
+            document.querySelector('#reasoning p').textContent = data.rumor_reasoning;
+
+            // Sources
+            document.getElementById('sourceCount').textContent = data.num_sources + ' source' + (data.num_sources !== 1 ? 's' : '') + ' found';
+            document.getElementById('sourcesTags').innerHTML = data.sources_found.map(s => 
+                `<span class="source-tag">${s}</span>`
+            ).join('');
+            
+            const verifiedStatus = document.getElementById('verifiedStatus');
+            verifiedStatus.innerHTML = data.is_verified ? '<span class="verified"><i class="fas fa-check"></i> Verified</span>' : '<span>Not Verified</span>';
+
+            // Google
+            document.getElementById('googleMentions').textContent = data.google_mentions + ' mentions';
+
+            // Twitter
+            document.getElementById('tweetCount').textContent = data.estimated_tweets.toLocaleString() + ' tweets';
+            
+            const trendingTag = document.getElementById('trendingTag');
+            trendingTag.innerHTML = data.is_trending ? '<span class="trending"><i class="fas fa-fire"></i> Trending</span>' : 'Not Trending';
+
+            // Scroll to results
+            document.getElementById('resultContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Helper functions
+        function getRumorColor(colorName) {
+            const colors = {
+                'green': '#22c55e',
+                'lightgreen': '#86efac',
+                'yellow': '#eab308',
+                'orange': '#f97316',
+                'red': '#ef4444'
+            };
+            return colors[colorName] || '#6b7280';
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('resultContainer').style.display = 'none';
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'flex';
+        }
+
+        function updateAnalytics() {
+            // Simulate random analytics data
+            document.getElementById('fakeNewsToday').textContent = Math.floor(Math.random() * 50) + 20;
+            document.getElementById('verifiedNews').textContent = Math.floor(Math.random() * 100) + 80;
+            document.getElementById('rumorsDetected').textContent = Math.floor(Math.random() * 25) + 10;
+            document.getElementById('trendingTopicsCount').textContent = Math.floor(Math.random() * 15) + 5;
+        }
+    </script>
+</body>
+</html>
+
+
