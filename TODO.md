@@ -1,18 +1,25 @@
-# Fake News Detection Web Application - Implementation Plan
+# Fake News Detection Completion TODO
 
-## Files Created
+## Plan Progress: 3/6 ✅
 
-✅ requirements.txt - Dependencies for the project
-✅ train_model.py - Train TF-IDF + Logistic Regression model
-✅ news.csv - Expanded dataset (200+ samples)
-✅ app.py - Flask backend with all verification features
-✅ templates/index.html - Modern UI for news input and results
-✅ static/style.css - Responsive styling
+### 1. **Dataset** [✅]
+- [✅] Create `news.csv` with 250+ real/fake samples
 
-## Remaining Steps (User Action Required)
+### 2. **Dependencies** [✅]
+- [✅] Update `requirements.txt` (add sklearn, requests, etc.)
 
-1. Install dependencies: `pip install -r requirements.txt`
-2. Train the model: `python train_model.py`
-3. Run the app: `python app.py`
-4. Open http://127.0.0.1:5000
+### 3. **Backend** [✅]
+- [✅] Complete `app.py`: ML loading, /analyze endpoint, APIs, scoring
+
+### 4. **Model Training** [ ]
+- [ ] Run `python train_model.py` (generate model.pkl, vectorizer.pkl)
+
+### 5. **Integrations** [ ]
+- [ ] Test NewsAPI/Google/Twitter (simulation mode ready)
+
+### 6. **Final Testing** [ ]
+- [ ] Test full flow: UI → backend → results
+- [ ] Update README
+- [ ] Complete! Run `python app.py`
+
 
