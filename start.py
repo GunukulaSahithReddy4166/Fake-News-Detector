@@ -1,5 +1,6 @@
-te_path>C:/Users/sahit/OneDrive/Desktop/fakenews detector/start.py</absolute_path>
-<parameter name="content">import os
+import os
 import sys
-os.chdir(r"C:\Users\sahit\OneDrive\Desktop\fakenews detector")
-os.system(sys.executable + " app.py")
+from pathlib import Path
+current_dir=Path(__file__).parent.resolve()
+os.chdir(current_dir)
+os.system(f"{sys.executable } app.py")
