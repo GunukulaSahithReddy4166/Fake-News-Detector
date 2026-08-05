@@ -1,5 +1,5 @@
-te_path>C:/Users/sahit/OneDrive/Desktop/fakenews detector/launch.py</absolute_path>
-<parameter name="content">import os
+
+import os
 import subprocess
 import sys
 
