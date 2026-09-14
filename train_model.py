@@ -1,15 +1,16 @@
 """Train and evaluate the Fake News Detector text-classification model."""
 
-from pathlib import Path
 import json
 import re
 import string
+from pathlib import Path
 
 import joblib
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, precision_recall_fscore_support
+from sklearn.metrics import (accuracy_score, classification_report,
+                             confusion_matrix, precision_recall_fscore_support)
 from sklearn.model_selection import StratifiedKFold, cross_validate, train_test_split
 from sklearn.pipeline import Pipeline
 
@@ -19,10 +20,6 @@ MODEL_DIR = BASE_DIR / "models"
 MODEL_PATH = MODEL_DIR / "model.pkl"
 VECTORIZER_PATH = MODEL_DIR / "vectorizer.pkl"
 METRICS_PATH = MODEL_DIR / "metrics.json"
-# Temporary compatibility paths for the current Flask loader. These can be
-# removed after app.py is switched to the models/ paths.
-LEGACY_MODEL_PATH = BASE_DIR / "model.pkl"
-LEGACY_VECTORIZER_PATH = BASE_DIR / "vectorizer.pkl"
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
 
@@ -59,9 +56,12 @@ def validate_dataset(df):
 def build_pipeline():
     return Pipeline([
         ("tfidf", TfidfVectorizer(
-            max_df=0.95, min_df=1, stop_words="english", ngram_range=(1, 2), sublinear_tf=True
+            max_df=0.95, min_df=1, stop_words="english",
+            ngram_range=(1, 2), sublinear_tf=True
         )),
-        ("classifier", LogisticRegression(max_iter=2000, random_state=RANDOM_STATE, class_weight="balanced")),
+        ("classifier", LogisticRegression(
+            max_iter=2000, random_state=RANDOM_STATE, class_weight="balanced"
+        )),
     ])
 
 
@@ -93,7 +93,8 @@ def main():
     y_pred = pipeline.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
     precision, recall, f1, _ = precision_recall_fscore_support(
-        y_test, y_pred, labels=["fake", "real"], average="binary", pos_label="real", zero_division=0
+        y_test, y_pred, labels=["fake", "real"], average="binary",
+        pos_label="real", zero_division=0
     )
     matrix = confusion_matrix(y_test, y_pred, labels=["fake", "real"])
 
@@ -110,38 +111,51 @@ def main():
     cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=RANDOM_STATE)
     cv_results = cross_validate(
         build_pipeline(), X, y, cv=cv,
-        scoring={"accuracy": "accuracy", "precision": "precision", "recall": "recall", "f1": "f1"},
+        scoring={"accuracy": "accuracy", "precision": "precision",
+                 "recall": "recall", "f1": "f1"}
     )
     cv_summary = {}
     print(f"--- {folds}-fold stratified cross-validation ---")
     for metric in ["accuracy", "precision", "recall", "f1"]:
         values = cv_results[f"test_{metric}"]
         mean, std = float(values.mean()), float(values.std())
-        cv_summary[metric] = {"mean": mean, "std": std, "folds": [float(v) for v in values]}
+        cv_summary[metric] = {
+            "mean": mean, "std": std, "folds": [float(v) for v in values]
+        }
         print(f"{metric.capitalize():9}: {mean:.4f} +/- {std:.4f}")
 
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     fitted_model = pipeline.named_steps["classifier"]
     fitted_vectorizer = pipeline.named_steps["tfidf"]
-    for path, artifact in [
-        (MODEL_PATH, fitted_model), (VECTORIZER_PATH, fitted_vectorizer),
-        (LEGACY_MODEL_PATH, fitted_model), (LEGACY_VECTORIZER_PATH, fitted_vectorizer),
-    ]:
-        joblib.dump(artifact, path)
-        print(f"Saved: {path.relative_to(BASE_DIR)}")
+    joblib.dump(fitted_model, MODEL_PATH)
+    joblib.dump(fitted_vectorizer, VECTORIZER_PATH)
+    print(f"Saved: {MODEL_PATH.relative_to(BASE_DIR)}")
+    print(f"Saved: {VECTORIZER_PATH.relative_to(BASE_DIR)}")
 
     metrics = {
         "dataset": str(DATA_PATH.relative_to(BASE_DIR)),
-        "samples": int(len(df)), "class_distribution": {k: int(v) for k, v in counts.items()},
-        "removed_duplicates": duplicate_count, "test_size": TEST_SIZE, "random_state": RANDOM_STATE,
-        "model": "LogisticRegression", "features": "TF-IDF unigram + bigram",
+        "samples": int(len(df)),
+        "class_distribution": {k: int(v) for k, v in counts.items()},
+        "removed_duplicates": duplicate_count,
+        "test_size": TEST_SIZE,
+        "random_state": RANDOM_STATE,
+        "model": "LogisticRegression",
+        "features": "TF-IDF unigram + bigram",
         "holdout": {
-            "accuracy": float(accuracy), "precision_real": float(precision),
-            "recall_real": float(recall), "f1_real": float(f1),
-            "confusion_matrix_labels": ["fake", "real"], "confusion_matrix": matrix.tolist(),
+            "accuracy": float(accuracy),
+            "precision_real": float(precision),
+            "recall_real": float(recall),
+            "f1_real": float(f1),
+            "confusion_matrix_labels": ["fake", "real"],
+            "confusion_matrix": matrix.tolist(),
         },
-        "cross_validation": {"type": "StratifiedKFold", "folds": folds, "metrics": cv_summary},
-        "warning": "Metrics describe this small curated dataset and are not real-world fact-checking accuracy.",
+        "cross_validation": {
+            "type": "StratifiedKFold", "folds": folds, "metrics": cv_summary
+        },
+        "warning": (
+            "Metrics describe this small curated dataset and are not "
+            "real-world fact-checking accuracy."
+        ),
     }
     METRICS_PATH.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     print(f"Saved: {METRICS_PATH.relative_to(BASE_DIR)}")
