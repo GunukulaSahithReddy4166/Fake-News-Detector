@@ -6,14 +6,14 @@ SafeSource is a Flask-based web application that combines **machine-learning tex
 
 ## Features
 
-- **Machine Learning:** TF-IDF text features with a scikit-learn classification model.
+- **Machine Learning:** TF-IDF text features with Logistic Regression.
 - **NewsAPI verification:** Searches real publisher coverage when `NEWS_API_KEY` is configured.
 - **Google News RSS:** Searches related coverage through Google News RSS.
 - **Trusted-source signal:** Counts distinct publishers and identifies configured trusted publishers.
-- **Credibility score:** Combines ML confidence and external-source evidence into a single 0–100 score.
+- **Evidence score:** Combines ML output and external-source evidence into a 0–100 application-level score.
 - **Transparent X/Twitter status:** X/Twitter data is not fabricated. The current version reports the integration as unavailable because no live X API is configured.
 - **Responsive frontend:** HTML, CSS and vanilla JavaScript frontend connected to Flask's `/analyze` endpoint.
-- **Production deployment configuration:** Gunicorn and a `Procfile` are included for platforms that support Procfile-based Python services.
+- **Production configuration:** Gunicorn and a `Procfile` are included for Procfile-compatible cloud platforms.
 
 ## Architecture
 
@@ -24,7 +24,7 @@ User enters news claim
    Flask /analyze
         │
         ├──────────────► ML model
-        │                 TF-IDF → classification
+        │                 TF-IDF → Logistic Regression
         │
         ├──────────────► NewsAPI
         │                 publisher/article evidence
@@ -36,7 +36,7 @@ User enters news claim
  Evidence + ML confidence
         │
         ▼
- Credibility score + explanation
+ Evidence score + explanation
         │
         ▼
       Web UI
@@ -47,7 +47,7 @@ User enters news claim
 | Layer | Technology |
 |---|---|
 | Backend | Python, Flask |
-| Machine Learning | scikit-learn, TF-IDF, joblib |
+| Machine Learning | scikit-learn, TF-IDF, Logistic Regression, joblib |
 | External data | NewsAPI, Google News RSS |
 | HTTP/XML | requests, Python XML parser |
 | Frontend | HTML5, CSS3, vanilla JavaScript |
@@ -69,6 +69,8 @@ Fake-News-Detector/
 │   └── style.css
 ├── templates/
 │   └── index.html
+├── tests/
+│   └── test_app.py
 ├── app.py
 ├── train_model.py
 ├── requirements.txt
@@ -83,15 +85,15 @@ Fake-News-Detector/
 
 ### 1. Input preprocessing
 
-The submitted text is normalized before ML inference. The application removes unnecessary punctuation/whitespace and prepares the text for the trained vectorizer.
+The submitted text is normalized before ML inference using the same cleaning logic used during training.
 
 ### 2. ML prediction
 
-The trained scikit-learn model receives TF-IDF features and returns a fake/real prediction with probabilities.
+The trained scikit-learn model receives TF-IDF features and returns a fake/real prediction with model probabilities. These probabilities are **model outputs, not factual truth probabilities**.
 
 ### 3. NewsAPI evidence
 
-If `NEWS_API_KEY` is available, SafeSource searches NewsAPI for related articles and counts distinct publishers. A small configured list of established publishers is used as a trusted-source signal.
+If `NEWS_API_KEY` is available, SafeSource searches NewsAPI for related articles and counts distinct publishers. A configured list of established publishers is used as a trusted-source signal.
 
 ### 4. Google News evidence
 
@@ -99,19 +101,73 @@ The application performs a Google News RSS search and counts related results. Th
 
 ### 5. X/Twitter
 
-The application deliberately does **not** generate simulated tweet counts or trending values. Until a real X API integration is configured, the UI clearly reports that social-media verification is unavailable.
+The application deliberately does **not** generate simulated tweet counts or trending values. Until a real X API integration is configured, the UI reports social-media verification as unavailable.
 
-### 6. Final score
+### 6. Evidence score
 
 The current backend combines:
 
 ```text
-ML confidence       → 55%
-NewsAPI source      → 30%
-Google News signal  → 15%
+ML signal          → 55%
+NewsAPI sources    → 30%
+Google News signal → 15%
 ```
 
-The score is an application-level evidence score; it is **not** a probability that a claim is objectively true.
+The score is an application-level evidence score; it is **not a probability that a claim is objectively true**.
+
+## ML Evaluation — Current Result
+
+The included dataset contains **126 usable examples**:
+
+- Fake: **71**
+- Real: **55**
+- Holdout training split: **100 train / 26 test**
+- Duplicate claims removed: **0**
+
+The current Logistic Regression + TF-IDF model produced the following results in GitHub Actions:
+
+| Metric | Holdout | 5-fold CV mean ± std |
+|---|---:|---:|
+| Accuracy | **65.38%** | **56.40% ± 7.20%** |
+| Precision — real | **62.50%** | **49.88% ± 13.74%** |
+| Recall — real | **45.45%** | **30.91% ± 9.27%** |
+| F1 — real | **52.63%** | **38.08% ± 11.02%** |
+
+Holdout confusion matrix, with rows = actual and columns = predicted (`fake`, `real`):
+
+```text
+[[12, 3],
+ [ 6, 5]]
+```
+
+These results are **not strong enough to claim production-grade fake-news detection**. The dataset is small and appears to contain simplified/synthetic claims, so the next model improvement should focus on obtaining a larger, more representative labeled dataset rather than claiming a high real-world accuracy.
+
+## Model Testing
+
+Automated tests run after training and verify:
+
+- model/vectorizer artifacts load correctly;
+- known fake and known real examples produce valid predictions;
+- probabilities are in the expected range and sum to approximately 100%;
+- completely new headlines produce valid predictions and confidence values;
+- short `/analyze` input is rejected;
+- `/analyze` works when external news integrations are unavailable;
+- generated evaluation metrics are finite and complete.
+
+The latest GitHub Actions run completed successfully with **6 tests passed**.
+
+Example inference results from the latest CI run:
+
+```text
+Known fake → fake, 61.2% fake / 38.8% real
+Known real → real, 42.2% fake / 57.8% real
+
+New headline #1 → fake, 59.7% confidence
+New headline #2 → fake, 52.4% confidence
+New headline #3 → fake, 56.0% confidence
+```
+
+The new-headline results are deliberately treated as **low-confidence model signals**, not facts. This testing shows why the current model should not be presented as a definitive fact-checker.
 
 ## Local Setup
 
@@ -152,17 +208,21 @@ Copy `.env.example` to `.env` for local development and set your NewsAPI key.
 NEWS_API_KEY=your_key_here
 ```
 
-Never commit a real API key. The repository's `.gitignore` is configured to exclude `.env`.
+Never commit a real API key. The repository's `.gitignore` excludes `.env`.
 
 ### 5. Train the model
-
-The training pipeline is maintained separately from runtime inference. Run:
 
 ```bash
 python train_model.py
 ```
 
-This step will generate the model artifacts required by the application. The exact artifact location is part of the final ML-pipeline cleanup and testing stage.
+This generates:
+
+```text
+models/model.pkl
+models/vectorizer.pkl
+models/metrics.json
+```
 
 ### 6. Run locally
 
@@ -170,11 +230,7 @@ This step will generate the model artifacts required by the application. The exa
 python app.py
 ```
 
-Open:
-
-```text
-http://127.0.0.1:5000
-```
+Open `http://127.0.0.1:5000`.
 
 ## API Endpoint
 
@@ -186,7 +242,7 @@ Accepts form data:
 news_text=<headline or article text>
 ```
 
-The endpoint returns JSON containing the ML prediction, probabilities, credibility score, source evidence, Google News results, and integration status fields.
+The endpoint returns the ML prediction, model probabilities, evidence score, source evidence, Google News results, and integration status fields.
 
 Example response shape:
 
@@ -208,54 +264,51 @@ Values above are illustrative response shapes, not guaranteed results.
 
 ## Error Handling and Limitations
 
-- NewsAPI requires a valid API key and is subject to the provider's plan limits and restrictions.
+- NewsAPI requires a valid API key and is subject to provider plan limits.
 - Google News RSS availability and search results can change over time.
 - X/Twitter verification is currently disabled rather than simulated.
-- ML accuracy depends heavily on the quality, size and representativeness of the training dataset.
-- A news article being reported by several publishers does not automatically prove that every claim in it is true.
-- The configured trusted-publisher list is an evidence heuristic, not an endorsement or fact-checking authority.
-- The application should not be used as the sole source for high-impact decisions.
+- ML performance depends heavily on dataset quality, size and representativeness.
+- Multiple publisher matches do not automatically prove every claim is true.
+- The trusted-publisher list is an evidence heuristic, not a fact-checking authority.
+- The application should not be the sole source for high-impact decisions.
 
 ## Production Deployment
 
-The repository includes a Gunicorn-based production command in `Procfile`:
+The repository includes:
 
 ```text
 web: gunicorn app:app --bind 0.0.0.0:$PORT
 ```
 
-A Procfile-compatible cloud platform can use this command to start the Flask application. Before deployment, configure the required environment variables in the platform's secret/environment settings.
+Before deployment:
 
-### Recommended deployment approach
+1. Connect the repository to a recognized cloud platform such as Render or Railway.
+2. Install dependencies from `requirements.txt`.
+3. Configure `NEWS_API_KEY` as a platform secret.
+4. Generate the ML artifacts during the platform build process or otherwise provide them securely.
+5. Start the service with Gunicorn.
+6. Verify both the home page and `/analyze` endpoint.
+7. Monitor hosting and external API costs.
 
-1. Connect the GitHub repository to a recognized cloud platform such as Render or Railway.
-2. Configure the Python environment and build/install dependencies from `requirements.txt`.
-3. Set `NEWS_API_KEY` as a secret environment variable.
-4. Use the repository's `Procfile` to start Gunicorn.
-5. Verify the home page and `POST /analyze` flow after deployment.
-6. Monitor API limits and hosting costs before keeping a public instance continuously active.
-
-A deployment does not need to remain permanently online for the project to demonstrate production deployment knowledge. If a hosting provider or external API requires paid usage, it is better to stop the service than to claim that an inactive deployment is continuously live.
+If hosting or external API usage requires paid service, stopping the deployment is preferable to claiming a continuously live deployment that is not actually active.
 
 ## Security Notes
 
 - API keys belong in environment variables, never in source code.
 - `.env` is ignored by Git.
-- Model artifacts should be generated during the controlled build/training process rather than committed accidentally.
-- External API failures are surfaced as unavailable/error states instead of being replaced with fabricated data.
+- Generated model artifacts are ignored by Git.
+- External API failures are surfaced as unavailable/error states instead of fabricated data.
 
 ## Development Status
-
-The repository is being completed in stages:
 
 - Repository cleanup — complete
 - Backend/API evidence integration — complete
 - Frontend/backend compatibility — complete
 - Production server configuration — complete
-- Documentation — complete
-- ML training/model artifact pipeline — final cleanup stage
-- End-to-end testing — pending
-- Cloud deployment verification — pending
+- ML training pipeline — complete
+- ML evaluation/testing — complete
+- Model quality improvement with a larger representative dataset — **pending**
+- End-to-end cloud deployment — pending
 
 ## License
 
