@@ -1,11 +1,14 @@
 import json
+import sys
 from pathlib import Path
 
 import pandas as pd
 
+BASE_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BASE_DIR))
+
 import app
 
-BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_PATH = BASE_DIR / "data" / "news.csv"
 METRICS_PATH = BASE_DIR / "models" / "metrics.json"
 
