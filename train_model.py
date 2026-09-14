@@ -66,6 +66,27 @@ def build_pipeline():
     ])
 
 
+def precision_real(y_true, y_pred):
+    return precision_recall_fscore_support(
+        y_true, y_pred, labels=["fake", "real"], average="binary",
+        pos_label="real", zero_division=0
+    )[0]
+
+
+def recall_real(y_true, y_pred):
+    return precision_recall_fscore_support(
+        y_true, y_pred, labels=["fake", "real"], average="binary",
+        pos_label="real", zero_division=0
+    )[1]
+
+
+def f1_real(y_true, y_pred):
+    return precision_recall_fscore_support(
+        y_true, y_pred, labels=["fake", "real"], average="binary",
+        pos_label="real", zero_division=0
+    )[2]
+
+
 def main():
     print("=" * 72)
     print("FAKE NEWS DETECTION - MODEL TRAINING PIPELINE")
@@ -112,20 +133,9 @@ def main():
     cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=RANDOM_STATE)
     scoring = {
         "accuracy": "accuracy",
-        "precision": make_scorer(precision_recall_fscore_support, average="binary",
-                                  pos_label="real", zero_division=0),
-    }
-    scoring = {
-        "accuracy": "accuracy",
-        "precision": make_scorer(lambda yt, yp: precision_recall_fscore_support(
-            yt, yp, labels=["fake", "real"], average="binary", pos_label="real", zero_division=0
-        )[0]),
-        "recall": make_scorer(lambda yt, yp: precision_recall_fscore_support(
-            yt, yp, labels=["fake", "real"], average="binary", pos_label="real", zero_division=0
-        )[1]),
-        "f1": make_scorer(lambda yt, yp: precision_recall_fscore_support(
-            yt, yp, labels=["fake", "real"], average="binary", pos_label="real", zero_division=0
-        )[2]),
+        "precision": make_scorer(precision_real),
+        "recall": make_scorer(recall_real),
+        "f1": make_scorer(f1_real),
     }
     cv_results = cross_validate(build_pipeline(), X, y, cv=cv, scoring=scoring)
     cv_summary = {}
@@ -133,7 +143,9 @@ def main():
     for metric in ["accuracy", "precision", "recall", "f1"]:
         values = cv_results[f"test_{metric}"]
         mean, std = float(values.mean()), float(values.std())
-        cv_summary[metric] = {"mean": mean, "std": std, "folds": [float(v) for v in values]}
+        cv_summary[metric] = {
+            "mean": mean, "std": std, "folds": [float(v) for v in values]
+        }
         print(f"{metric.capitalize():9}: {mean:.4f} +/- {std:.4f}")
 
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
@@ -161,7 +173,9 @@ def main():
             "confusion_matrix_labels": ["fake", "real"],
             "confusion_matrix": matrix.tolist(),
         },
-        "cross_validation": {"type": "StratifiedKFold", "folds": folds, "metrics": cv_summary},
+        "cross_validation": {
+            "type": "StratifiedKFold", "folds": folds, "metrics": cv_summary
+        },
         "warning": "Metrics describe this small curated dataset and are not real-world fact-checking accuracy.",
     }
     METRICS_PATH.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
