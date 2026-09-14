@@ -42,4 +42,4 @@ jobs:
         python -c "import app; assert app.model is not None and app.vectorizer is not None; print('Flask ML artifacts loaded successfully')"
 
     - name: Test with pytest
-      run: pytest
+      run: pytest -s
