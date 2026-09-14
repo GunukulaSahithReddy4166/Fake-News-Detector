@@ -11,6 +11,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (accuracy_score, classification_report,
                              confusion_matrix, precision_recall_fscore_support)
+from sklearn.metrics import make_scorer
 from sklearn.model_selection import StratifiedKFold, cross_validate, train_test_split
 from sklearn.pipeline import Pipeline
 
@@ -109,19 +110,30 @@ def main():
 
     folds = min(5, int(y.value_counts().min()))
     cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=RANDOM_STATE)
-    cv_results = cross_validate(
-        build_pipeline(), X, y, cv=cv,
-        scoring={"accuracy": "accuracy", "precision": "precision",
-                 "recall": "recall", "f1": "f1"}
-    )
+    scoring = {
+        "accuracy": "accuracy",
+        "precision": make_scorer(precision_recall_fscore_support, average="binary",
+                                  pos_label="real", zero_division=0),
+    }
+    scoring = {
+        "accuracy": "accuracy",
+        "precision": make_scorer(lambda yt, yp: precision_recall_fscore_support(
+            yt, yp, labels=["fake", "real"], average="binary", pos_label="real", zero_division=0
+        )[0]),
+        "recall": make_scorer(lambda yt, yp: precision_recall_fscore_support(
+            yt, yp, labels=["fake", "real"], average="binary", pos_label="real", zero_division=0
+        )[1]),
+        "f1": make_scorer(lambda yt, yp: precision_recall_fscore_support(
+            yt, yp, labels=["fake", "real"], average="binary", pos_label="real", zero_division=0
+        )[2]),
+    }
+    cv_results = cross_validate(build_pipeline(), X, y, cv=cv, scoring=scoring)
     cv_summary = {}
     print(f"--- {folds}-fold stratified cross-validation ---")
     for metric in ["accuracy", "precision", "recall", "f1"]:
         values = cv_results[f"test_{metric}"]
         mean, std = float(values.mean()), float(values.std())
-        cv_summary[metric] = {
-            "mean": mean, "std": std, "folds": [float(v) for v in values]
-        }
+        cv_summary[metric] = {"mean": mean, "std": std, "folds": [float(v) for v in values]}
         print(f"{metric.capitalize():9}: {mean:.4f} +/- {std:.4f}")
 
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
@@ -149,13 +161,8 @@ def main():
             "confusion_matrix_labels": ["fake", "real"],
             "confusion_matrix": matrix.tolist(),
         },
-        "cross_validation": {
-            "type": "StratifiedKFold", "folds": folds, "metrics": cv_summary
-        },
-        "warning": (
-            "Metrics describe this small curated dataset and are not "
-            "real-world fact-checking accuracy."
-        ),
+        "cross_validation": {"type": "StratifiedKFold", "folds": folds, "metrics": cv_summary},
+        "warning": "Metrics describe this small curated dataset and are not real-world fact-checking accuracy.",
     }
     METRICS_PATH.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     print(f"Saved: {METRICS_PATH.relative_to(BASE_DIR)}")
