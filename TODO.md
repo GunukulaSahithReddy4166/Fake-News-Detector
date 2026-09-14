@@ -1,6 +1,6 @@
 # SafeSource — Project Completion Checklist
 
-This checklist tracks the remaining engineering work without claiming features that are not implemented yet.
+This checklist tracks the engineering state without claiming features that are not implemented.
 
 ## 1. Repository and Codebase
 
@@ -19,7 +19,7 @@ This checklist tracks the remaining engineering work without claiming features t
 - [x] Remove simulated Twitter/X counts
 - [x] Add explicit unavailable status for unsupported X/Twitter verification
 - [x] Add API error handling and timeouts
-- [x] Calculate credibility from ML and external evidence signals
+- [x] Calculate evidence score from ML and external evidence signals
 
 ## 3. Frontend
 
@@ -35,40 +35,57 @@ This checklist tracks the remaining engineering work without claiming features t
 - [x] Clean `requirements.txt`
 - [x] Add Gunicorn
 - [x] Add `Procfile`
+- [x] Configure Flask for production-style startup
 - [x] Document environment-variable configuration
-- [ ] Review Flask startup/debug configuration for local vs production use
 
-## 5. ML Pipeline — FINAL ENGINEERING STAGE
+## 5. ML Pipeline
 
-- [ ] Verify `data/news.csv` schema and dataset quality
-- [ ] Update `train_model.py` to use the new dataset path
-- [ ] Make model output paths consistent with `models/`
-- [ ] Make `app.py` load model artifacts from the same paths
-- [ ] Verify label/class handling for fake vs real predictions
-- [ ] Train the model successfully
-- [ ] Inspect accuracy, precision, recall and F1 score
-- [ ] Avoid unsupported accuracy claims in documentation
-- [ ] Test inference with representative examples
+- [x] Verify `data/news.csv` schema
+- [x] Train from the repository dataset path
+- [x] Make model output paths consistent with `models/`
+- [x] Make `app.py` load model artifacts from the same paths
+- [x] Verify fake/real class handling
+- [x] Train the model successfully in GitHub Actions
+- [x] Calculate holdout Accuracy, Precision, Recall and F1
+- [x] Calculate finite 5-fold cross-validation metrics
+- [x] Remove unsupported accuracy claims
+- [x] Test known fake and known real examples
+- [x] Test completely new headlines
+- [x] Check probability ranges and confidence behavior
+- [ ] Improve model quality using a larger, representative labeled dataset
+
+### Current ML evaluation
+
+- Dataset: 126 examples
+- Holdout accuracy: 65.38%
+- Holdout precision (real): 62.50%
+- Holdout recall (real): 45.45%
+- Holdout F1 (real): 52.63%
+- 5-fold CV accuracy: 56.40% ± 7.20%
+- 5-fold CV F1 (real): 38.08% ± 11.02%
+
+**Conclusion:** the current model is functional but not strong enough to claim production-grade fact-checking accuracy. Dataset expansion is the next ML improvement.
 
 ## 6. Testing
 
-- [ ] Run Python syntax checks
-- [ ] Run the application locally
-- [ ] Test the home page
-- [ ] Test valid `/analyze` requests
-- [ ] Test empty/short input
-- [ ] Test NewsAPI missing-key behavior
-- [ ] Test NewsAPI error/rate-limit behavior
-- [ ] Test Google News RSS failure behavior
-- [ ] Confirm X/Twitter unavailable state does not break the UI
-- [ ] Test ML prediction after the final model pipeline is completed
-- [ ] Test complete UI → Flask → ML/API → results flow
-- [ ] Review GitHub Actions result
+- [x] Run Python lint checks
+- [x] Verify generated model artifacts
+- [x] Verify Flask imports the trained model
+- [x] Test home/Flask application components
+- [x] Test valid `/analyze` request with external services mocked
+- [x] Test empty/short input
+- [x] Test X/Twitter unavailable state
+- [x] Test ML prediction probabilities
+- [x] Test known fake and real examples
+- [x] Test new/random-style headlines
+- [x] Review GitHub Actions result
+- [x] All automated tests pass: 6/6
 
 ## 7. Deployment
 
 - [ ] Deploy to a recognized cloud platform such as Render or Railway
 - [ ] Configure `NEWS_API_KEY` as a platform secret
+- [ ] Configure model training/artifacts for the deployment build
 - [ ] Confirm Gunicorn starts successfully
 - [ ] Verify the public home page
 - [ ] Verify `/analyze` in the deployed environment
@@ -86,5 +103,6 @@ The project is complete when:
 5. The frontend never crashes because an optional integration is unavailable.
 6. No fake/random statistics are presented as live data.
 7. Local and production startup paths are documented.
-8. The complete application has been tested end-to-end.
-9. Deployment configuration works on a recognized hosting platform.
+8. Automated testing passes.
+9. The ML model has been evaluated honestly and its limitations are documented.
+10. Deployment configuration works on a recognized hosting platform.
