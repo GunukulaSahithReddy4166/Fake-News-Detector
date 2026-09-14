@@ -1,8 +1,7 @@
-flask
+Flask
 pandas
 numpy
 scikit-learn
 joblib
 requests
-beautifulsoup4
-nltk
+gunicorn
